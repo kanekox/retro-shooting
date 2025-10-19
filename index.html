@@ -31,7 +31,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const keys = { left:false, right:false, space:false };
 
-let player, bullets, enemies, enemyBullets;
+let player, bullets, enemies, enemyBullets, explosions;
 let score, lives, gameOver, frame;
 let stars = [];
 
@@ -40,6 +40,7 @@ function init(){
   bullets = [];
   enemies = [];
   enemyBullets = [];
+  explosions = [];
   score = 0;
   lives = 3;
   gameOver = false;
@@ -142,6 +143,14 @@ function update(){
     for(let e of enemies){
       if(b.x < e.x+e.w && b.x+b.w > e.x && b.y < e.y+e.h && b.y+b.h > e.y){
         e.dead = true; b.dead = true; score += 10;
+        // 💥 爆発追加
+        explosions.push({
+          x: e.x + e.w/2,
+          y: e.y + e.h/2,
+          r: 5,           // 初期半径
+          maxR: 25,       // 最大半径
+          alpha: 1.0,     // 不透明度
+        });
       }
     }
   }
@@ -158,6 +167,13 @@ function update(){
     }
   });
   enemyBullets = enemyBullets.filter(b => !b.dead);
+
+  // --- 爆発更新 ---
+  explosions.forEach(ex => {
+    ex.r += 1.5;       // 半径拡大
+    ex.alpha -= 0.05;  // 徐々に透明に
+  });
+  explosions = explosions.filter(ex => ex.alpha > 0);
 }
 
 // --- 描画 ---
@@ -171,14 +187,6 @@ function draw(){
   }
 
   // --- プレイヤー（△っぽい宇宙船）---
-  // ctx.fillStyle = '#6cf'; // 明るい青
-  // ctx.beginPath();
-  // ctx.moveTo(player.x + player.w/2, player.y);           // 先端
-  // ctx.lineTo(player.x, player.y + player.h);             // 左下
-  // ctx.lineTo(player.x + player.w, player.y + player.h);  // 右下
-  // ctx.closePath();
-  // ctx.fill();
-  // --- プレイヤー ---
   const flicker = Math.floor(frame / 5) % 2;  // 5フレームごとにON/OFF切替
   ctx.fillStyle = flicker ? '#8ef' : '#4af';  // 色を交互に
   ctx.beginPath();
@@ -202,31 +210,6 @@ function draw(){
   bullets.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
 
   // --- 敵キャラ（タイプ別に形状を変える）---
-  // enemies.forEach(e => {
-  //   if(e.type === 'normal'){
-  //     // ◇型（赤）
-  //     ctx.fillStyle = 'red';
-  //     ctx.beginPath();
-  //     ctx.moveTo(e.x + e.w/2, e.y);                  // 上
-  //     ctx.lineTo(e.x + e.w, e.y + e.h/2);            // 右
-  //     ctx.lineTo(e.x + e.w/2, e.y + e.h);            // 下
-  //     ctx.lineTo(e.x, e.y + e.h/2);                  // 左
-  //     ctx.closePath();
-  //     ctx.fill();
-  //   } else {
-  //     // U字型（オレンジ）
-  //     ctx.fillStyle = 'orange';
-  //     ctx.beginPath();
-  //     ctx.moveTo(e.x, e.y);
-  //     ctx.lineTo(e.x + e.w, e.y);
-  //     ctx.lineTo(e.x + e.w, e.y + e.h*0.7);
-  //     ctx.lineTo(e.x + e.w*0.7, e.y + e.h);
-  //     ctx.lineTo(e.x + e.w*0.3, e.y + e.h);
-  //     ctx.lineTo(e.x, e.y + e.h*0.7);
-  //     ctx.closePath();
-  //     ctx.fill();
-  //   }
-  // });
   enemies.forEach(e => {
     const flicker = Math.floor((frame + e.x) / 10) % 2; // 敵ごとにずらす
     if(e.type === 'normal'){
@@ -257,6 +240,20 @@ function draw(){
   // --- 敵弾 ---
   ctx.fillStyle = 'cyan';
   enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
+
+  // --- 爆発描画 ---
+  explosions.forEach(ex => {
+    const gradient = ctx.createRadialGradient(ex.x, ex.y, 0, ex.x, ex.y, ex.r);
+    gradient.addColorStop(0, `rgba(255,255,255,${ex.alpha})`);
+    gradient.addColorStop(0.3, `rgba(255,200,0,${ex.alpha})`);
+    gradient.addColorStop(0.6, `rgba(255,80,0,${ex.alpha * 0.8})`);
+    gradient.addColorStop(1, `rgba(0,0,0,0)`);
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
 
   // --- スコア表示 ---
   ctx.fillStyle = 'white';
