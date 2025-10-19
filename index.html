@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Canvas シューティング（スコア＆残機付き）</title>
+<style>
+  body { margin: 0; overflow: hidden; background: black; }
+  canvas { display: block; margin: 0 auto; background: #000; touch-action: none; }
+  #controls {
+    position: fixed; bottom: 10px; left: 0; right: 0;
+    display: flex; justify-content: space-around; pointer-events: auto;
+  }
+  .btn {
+    background: rgba(255,255,255,0.2); border-radius: 50%;
+    width: 60px; height: 60px; text-align: center; line-height: 60px;
+    color: white; font-size: 30px; user-select: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="480" height="640"></canvas>
+
+<div id="controls">
+  <div class="btn" id="left">←</div>
+  <div class="btn" id="shoot">★</div>
+  <div class="btn" id="right">→</div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const keys = { left:false, right:false, space:false };
+
+let player = { x: 220, y: 580, w: 40, h: 20, speed: 5 };
+let bullets = [];
+let enemies = [];
+let enemyBullets = [];
+let score = 0;
+let lives = 3;
+let gameOver = false;
+let frame = 0;
+
+document.addEventListener('keydown', e => {
+  if(e.code === 'ArrowLeft') keys.left = true;
+  if(e.code === 'ArrowRight') keys.right = true;
+  if(e.code === 'Space') keys.space = true;
+  if(gameOver && e.code === 'Enter') restartGame();
+});
+document.addEventListener('keyup', e => {
+  if(e.code === 'ArrowLeft') keys.left = false;
+  if(e.code === 'ArrowRight') keys.right = false;
+  if(e.code === 'Space') keys.space = false;
+});
+
+// --- スマホボタン ---
+const btnLeft = document.getElementById('left');
+const btnRight = document.getElementById('right');
+const btnShoot = document.getElementById('shoot');
+
+btnLeft.addEventListener('touchstart', ()=>keys.left=true);
+btnLeft.addEventListener('touchend', ()=>keys.left=false);
+btnRight.addEventListener('touchstart', ()=>keys.right=true);
+btnRight.addEventListener('touchend', ()=>keys.right=false);
+btnShoot.addEventListener('touchstart', ()=>keys.space=true);
+btnShoot.addEventListener('touchend', ()=>keys.space=false);
+
+// --- 敵生成 ---
+function spawnEnemy(){
+  const type = Math.random()<0.5 ? 'normal' : 'shooter';
+  enemies.push({ x:Math.random()*440, y:-20, w:40, h:20, speed:2+Math.random()*1.5, type });
+}
+
+// --- ゲーム再開 ---
+function restartGame(){
+  player = { x: 220, y: 580, w: 40, h: 20, speed: 5 };
+  bullets = [];
+  enemies = [];
+  enemyBullets = [];
+  score = 0;
+  lives = 3;
+  gameOver = false;
+}
+
+function update(){
+  if(gameOver) return;
+
+  frame++;
+
+  // プレイヤー移動
+  if(keys.left) player.x -= player.speed;
+  if(keys.right) player.x += player.speed;
+  player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
+
+  // 弾発射
+  if(keys.space && frame % 10 === 0){
+    bullets.push({ x: player.x + player.w/2 - 2, y: player.y, w: 4, h: 10, speed: 7 });
+  }
+
+  // 弾更新
+  bullets.forEach(b => b.y -= b.speed);
+  bullets = bullets.filter(b => b.y > -b.h);
+
+  // 敵生成
+  if(frame % 60 === 0) spawnEnemy();
+
+  // 敵移動
+  enemies.forEach(e => {
+    e.y += e.speed;
+    // 射撃タイプの敵
+    if(e.type === 'shooter' && frame % 90 === 0){
+      enemyBullets.push({ x:e.x+e.w/2-2, y:e.y+e.h, w:4, h:10, speed:4 });
+    }
+  });
+  enemies = enemies.filter(e => e.y < canvas.height);
+
+  // 敵弾
+  enemyBullets.forEach(b => b.y += b.speed);
+  enemyBullets = enemyBullets.filter(b => b.y < canvas.height);
+
+  // 衝突判定
+  for(let b of bullets){
+    for(let e of enemies){
+      if(b.x < e.x+e.w && b.x+b.w > e.x && b.y < e.y+e.h && b.y+b.h > e.y){
+        e.dead = true; b.dead = true; score += 10;
+      }
+    }
+  }
+  bullets = bullets.filter(b => !b.dead);
+  enemies = enemies.filter(e => !e.dead);
+
+  // 敵・敵弾との当たり判定
+  [...enemies, ...enemyBullets].forEach(obj => {
+    if(player.x < obj.x+obj.w && player.x+player.w > obj.x &&
+       player.y < obj.y+obj.h && player.y+player.h > obj.y){
+      obj.dead = true;
+      lives--;
+      if(lives <= 0) gameOver = true;
+    }
+  });
+  enemyBullets = enemyBullets.filter(b => !b.dead);
+}
+
+function draw(){
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // プレイヤー
+  ctx.fillStyle = 'white';
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+
+  // 弾
+  ctx.fillStyle = 'yellow';
+  bullets.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
+
+  // 敵
+  enemies.forEach(e => {
+    ctx.fillStyle = e.type === 'normal' ? 'red' : 'orange';
+    ctx.fillRect(e.x, e.y, e.w, e.h);
+  });
+
+  // 敵弾
+  ctx.fillStyle = 'cyan';
+  enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
+
+  // スコア表示
+  ctx.fillStyle = 'white';
+  ctx.font = '20px sans-serif';
+  ctx.fillText('SCORE: ' + score, 10, 30);
+
+  // 残機表示（ハート）
+  for(let i=0; i<lives; i++){
+    ctx.fillStyle = 'pink';
+    ctx.beginPath();
+    const x = 400 + i*25;
+    const y = 25;
+    ctx.arc(x-5, y, 7, 0, Math.PI, false);
+    ctx.arc(x+5, y, 7, 0, Math.PI, false);
+    ctx.lineTo(x, y+12);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // ゲームオーバー表示
+  if(gameOver){
+    ctx.fillStyle = 'white';
+    ctx.font = '40px sans-serif';
+    ctx.fillText('GAME OVER', 120, 300);
+    ctx.font = '20px sans-serif';
+    ctx.fillText('Press ENTER to Restart', 130, 340);
+  }
+}
+
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
