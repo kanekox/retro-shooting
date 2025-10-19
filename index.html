@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Canvas シューティング（スコア＆残機付き）</title>
+<title>Canvas シューティング（背景スクロール付き）</title>
 <style>
   body { margin: 0; overflow: hidden; background: black; }
   canvas { display: block; margin: 0 auto; background: #000; touch-action: none; }
@@ -31,20 +31,38 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const keys = { left:false, right:false, space:false };
 
-let player = { x: 220, y: 580, w: 40, h: 20, speed: 5 };
-let bullets = [];
-let enemies = [];
-let enemyBullets = [];
-let score = 0;
-let lives = 3;
-let gameOver = false;
-let frame = 0;
+let player, bullets, enemies, enemyBullets;
+let score, lives, gameOver, frame;
+let stars = [];
+
+function init(){
+  player = { x: 220, y: 580, w: 40, h: 20, speed: 5 };
+  bullets = [];
+  enemies = [];
+  enemyBullets = [];
+  score = 0;
+  lives = 3;
+  gameOver = false;
+  frame = 0;
+
+  // 星の初期化
+  stars = [];
+  for(let i=0; i<100; i++){
+    stars.push({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height,
+      size: Math.random()*2,
+      speed: 1 + Math.random()*2
+    });
+  }
+}
+init();
 
 document.addEventListener('keydown', e => {
   if(e.code === 'ArrowLeft') keys.left = true;
   if(e.code === 'ArrowRight') keys.right = true;
   if(e.code === 'Space') keys.space = true;
-  if(gameOver && e.code === 'Enter') restartGame();
+  if(gameOver && e.code === 'Enter') init();
 });
 document.addEventListener('keyup', e => {
   if(e.code === 'ArrowLeft') keys.left = false;
@@ -70,21 +88,24 @@ function spawnEnemy(){
   enemies.push({ x:Math.random()*440, y:-20, w:40, h:20, speed:2+Math.random()*1.5, type });
 }
 
-// --- ゲーム再開 ---
-function restartGame(){
-  player = { x: 220, y: 580, w: 40, h: 20, speed: 5 };
-  bullets = [];
-  enemies = [];
-  enemyBullets = [];
-  score = 0;
-  lives = 3;
-  gameOver = false;
+// --- 星の更新 ---
+function updateStars(){
+  for(let s of stars){
+    s.y += s.speed;
+    if(s.y > canvas.height){
+      s.y = 0;
+      s.x = Math.random()*canvas.width;
+      s.size = Math.random()*2;
+    }
+  }
 }
 
+// --- メイン更新 ---
 function update(){
   if(gameOver) return;
-
   frame++;
+
+  updateStars();
 
   // プレイヤー移動
   if(keys.left) player.x -= player.speed;
@@ -106,7 +127,6 @@ function update(){
   // 敵移動
   enemies.forEach(e => {
     e.y += e.speed;
-    // 射撃タイプの敵
     if(e.type === 'shooter' && frame % 90 === 0){
       enemyBullets.push({ x:e.x+e.w/2-2, y:e.y+e.h, w:4, h:10, speed:4 });
     }
@@ -140,34 +160,110 @@ function update(){
   enemyBullets = enemyBullets.filter(b => !b.dead);
 }
 
+// --- 描画 ---
 function draw(){
+  // 背景（星空）
   ctx.fillStyle = 'black';
   ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  // プレイヤー
   ctx.fillStyle = 'white';
-  ctx.fillRect(player.x, player.y, player.w, player.h);
+  for(let s of stars){
+    ctx.fillRect(s.x, s.y, s.size, s.size);
+  }
 
-  // 弾
+  // --- プレイヤー（△っぽい宇宙船）---
+  // ctx.fillStyle = '#6cf'; // 明るい青
+  // ctx.beginPath();
+  // ctx.moveTo(player.x + player.w/2, player.y);           // 先端
+  // ctx.lineTo(player.x, player.y + player.h);             // 左下
+  // ctx.lineTo(player.x + player.w, player.y + player.h);  // 右下
+  // ctx.closePath();
+  // ctx.fill();
+  // --- プレイヤー ---
+  const flicker = Math.floor(frame / 5) % 2;  // 5フレームごとにON/OFF切替
+  ctx.fillStyle = flicker ? '#8ef' : '#4af';  // 色を交互に
+  ctx.beginPath();
+  ctx.moveTo(player.x + player.w/2, player.y);
+  ctx.lineTo(player.x, player.y + player.h);
+  ctx.lineTo(player.x + player.w, player.y + player.h);
+  ctx.closePath();
+  ctx.fill();
+
+  // --- スラスターの炎（オマケ）---
+  ctx.fillStyle = flicker ? 'orange' : 'yellow';
+  ctx.beginPath();
+  ctx.moveTo(player.x + player.w/2, player.y + player.h);
+  ctx.lineTo(player.x + player.w/2 - 4, player.y + player.h + 10);
+  ctx.lineTo(player.x + player.w/2 + 4, player.y + player.h + 10);
+  ctx.closePath();
+  ctx.fill();
+
+  // --- 弾 ---
   ctx.fillStyle = 'yellow';
   bullets.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
 
-  // 敵
+  // --- 敵キャラ（タイプ別に形状を変える）---
+  // enemies.forEach(e => {
+  //   if(e.type === 'normal'){
+  //     // ◇型（赤）
+  //     ctx.fillStyle = 'red';
+  //     ctx.beginPath();
+  //     ctx.moveTo(e.x + e.w/2, e.y);                  // 上
+  //     ctx.lineTo(e.x + e.w, e.y + e.h/2);            // 右
+  //     ctx.lineTo(e.x + e.w/2, e.y + e.h);            // 下
+  //     ctx.lineTo(e.x, e.y + e.h/2);                  // 左
+  //     ctx.closePath();
+  //     ctx.fill();
+  //   } else {
+  //     // U字型（オレンジ）
+  //     ctx.fillStyle = 'orange';
+  //     ctx.beginPath();
+  //     ctx.moveTo(e.x, e.y);
+  //     ctx.lineTo(e.x + e.w, e.y);
+  //     ctx.lineTo(e.x + e.w, e.y + e.h*0.7);
+  //     ctx.lineTo(e.x + e.w*0.7, e.y + e.h);
+  //     ctx.lineTo(e.x + e.w*0.3, e.y + e.h);
+  //     ctx.lineTo(e.x, e.y + e.h*0.7);
+  //     ctx.closePath();
+  //     ctx.fill();
+  //   }
+  // });
   enemies.forEach(e => {
-    ctx.fillStyle = e.type === 'normal' ? 'red' : 'orange';
-    ctx.fillRect(e.x, e.y, e.w, e.h);
+    const flicker = Math.floor((frame + e.x) / 10) % 2; // 敵ごとにずらす
+    if(e.type === 'normal'){
+      ctx.fillStyle = flicker ? '#f44' : '#a00';
+      // ひし形
+      ctx.beginPath();
+      ctx.moveTo(e.x + e.w/2, e.y);
+      ctx.lineTo(e.x + e.w, e.y + e.h/2);
+      ctx.lineTo(e.x + e.w/2, e.y + e.h);
+      ctx.lineTo(e.x, e.y + e.h/2);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      ctx.fillStyle = flicker ? '#ff9933' : '#cc6600';
+      // U字型
+      ctx.beginPath();
+      ctx.moveTo(e.x, e.y);
+      ctx.lineTo(e.x + e.w, e.y);
+      ctx.lineTo(e.x + e.w, e.y + e.h*0.7);
+      ctx.lineTo(e.x + e.w*0.7, e.y + e.h);
+      ctx.lineTo(e.x + e.w*0.3, e.y + e.h);
+      ctx.lineTo(e.x, e.y + e.h*0.7);
+      ctx.closePath();
+      ctx.fill();
+    }
   });
 
-  // 敵弾
+  // --- 敵弾 ---
   ctx.fillStyle = 'cyan';
   enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
 
-  // スコア表示
+  // --- スコア表示 ---
   ctx.fillStyle = 'white';
   ctx.font = '20px sans-serif';
   ctx.fillText('SCORE: ' + score, 10, 30);
 
-  // 残機表示（ハート）
+  // --- 残機表示（ハート）---
   for(let i=0; i<lives; i++){
     ctx.fillStyle = 'pink';
     ctx.beginPath();
@@ -180,7 +276,7 @@ function draw(){
     ctx.fill();
   }
 
-  // ゲームオーバー表示
+  // --- ゲームオーバー表示 ---
   if(gameOver){
     ctx.fillStyle = 'white';
     ctx.font = '40px sans-serif';
@@ -190,6 +286,7 @@ function draw(){
   }
 }
 
+// --- メインループ ---
 function loop(){
   update();
   draw();
