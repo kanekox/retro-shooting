@@ -1,41 +1,7 @@
-// Firebaseの設定
-const firebaseConfig = {
-  apiKey: "AIzaSyBGvRDZdogbWVR-Vn03lkPzLqMszX0f9eo",
-  authDomain: "kanekox-apps.firebaseapp.com",
-  projectId: "kanekox-apps",
-  storageBucket: "kanekox-apps.firebasestorage.app",
-  messagingSenderId: "968979817079",
-  appId: "1:968979817079:web:62936aa6570b6387ba1c72",
-  measurementId: "G-S5JH6RXKC2"  
-};
-
-// Firebase初期化（compatを使うことで既存の v8 スタイルの呼び出しが動作します）
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const keys = { left:false, right:false, space:false };
-
-let player, bullets, enemies, enemyBullets, explosions;
-let score, lives, gameOver = false, frame;
-let stars = [];
-let rankings = []; // トップ10のランキングデータ
-
+// 効果音再生関数
 let audioCtx;
-
-// ハイスコア管理用
-let highScore = 0;
-
-// ステージ／ボス用
-let level;
-let boss = null;            // ボスオブジェクト（存在しなければnull）
-let bossComing = false;     // ボスが出現中 or 出現準備中のフラグ
-let bossDefeated = false;
-
-// --- Audio Synth（WebAudioで効果音）---
-function playSound(freq, duration, type='sine', vol=0.1){
-  if(!audioCtx) return;
+function playSound(freq, duration, type = 'sine', vol = 0.1) {
+  if (!audioCtx) return;
   const osc = audioCtx.createOscillator();
   const g = audioCtx.createGain();
   osc.type = type;
@@ -46,9 +12,12 @@ function playSound(freq, duration, type='sine', vol=0.1){
   osc.start();
   osc.stop(audioCtx.currentTime + duration);
 }
+// ハイスコア管理
+let highScore = 0;
+// 入力状態管理
+const keys = { left: false, right: false, space: false };
 
-// --- スコア関連の関数 ---
-// ランキングを取得・更新する関数
+// ランキング取得関数
 async function updateRankings() {
   try {
     const snapshot = await db.collection('scores')
@@ -73,6 +42,22 @@ async function updateRankings() {
     console.error('ランキングの取得に失敗しました:', error);
   }
 }
+
+// Firebaseの設定
+const firebaseConfig = {
+  apiKey: "AIzaSyBGvRDZdogbWVR-Vn03lkPzLqMszX0f9eo",
+  authDomain: "kanekox-apps.firebaseapp.com",
+  projectId: "kanekox-apps",
+  storageBucket: "kanekox-apps.appspot.com",
+  messagingSenderId: "968979817079",
+  appId: "1:968979817079:web:62936aa6570b6387ba1c72",
+  measurementId: "G-S5JH6RXKC2"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+// canvasとctxの宣言
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
 // ハイスコアを更新する関数
 async function getHighScore() {
@@ -165,6 +150,7 @@ function submitScore() {
   }
 }
 
+
 // モーダルのイベント設定
 document.addEventListener('DOMContentLoaded', () => {
   // 全てのモーダルに外側クリックで閉じる機能を追加
@@ -176,16 +162,59 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 名前入力フォームでEnterキーを処理
-  const nameInput = document.getElementById('playerNameInput');
-  nameInput?.addEventListener('keypress', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      submitScore();
-    }
+  // IME入力の状態管理をグローバルに設定
+  document.addEventListener('compositionstart', () => {
+    isIMEComposing = true;
   });
+
+  document.addEventListener('compositionend', () => {
+    isIMEComposing = false;
+  });
+
+  // 名前入力モーダルの特別な処理
+  const nameInputModal = document.getElementById('nameInputModal');
+  if (nameInputModal) {
+    // モーダル内のキー入力をグローバルに伝播させない
+    nameInputModal.addEventListener('keydown', e => {
+      e.stopPropagation();
+    }, true);
+
+    function setupNameInput() {
+      const nameInput = document.getElementById('playerNameInput');
+      if (!nameInput) return;
+      nameInput.addEventListener('keydown', e => {
+        // IME確定時のEnterは無視
+        if (e.code === 'Enter' && isIMEComposing) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        // IME確定後またはIME未使用時のEnterで保存
+        if (e.code === 'Enter' && !isIMEComposing) {
+          e.preventDefault();
+          e.stopPropagation();
+          submitScore();
+        }
+      }, true);
+    }
+
+    // モーダル表示時に毎回セットアップを行う
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.target.style.display === 'block' && 
+            mutation.target.id === 'nameInputModal') {
+          setupNameInput();
+        }
+      });
+    });
+    observer.observe(nameInputModal, { 
+      attributes: true, 
+      attributeFilter: ['style'] 
+    });
+  }
 });
 
+// Escキーでモーダルを閉じる
 // Escキーでモーダルを閉じる
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
@@ -231,10 +260,18 @@ function init(){
 
 // --- 入力 ---
 document.addEventListener('keydown', e=>{
+  // モーダルが表示されている場合は、ゲームの入力を無視
+  const modal = document.querySelector('.modal[style*="display: block"]');
+  if (modal) {
+    e.stopPropagation();
+    return;
+  }
+
   if(e.code==='ArrowLeft') keys.left=true;
   if(e.code==='ArrowRight') keys.right=true;
   if(e.code==='Space') keys.space=true;
-  if(e.code==='Enter' && gameOver) init();
+  // IME入力中でない場合のみEnterを処理
+  if(e.code==='Enter' && gameOver && !window.isIMEComposing) init();
 });
 document.addEventListener('keyup', e=>{
   if(e.code==='ArrowLeft') keys.left=false;
@@ -245,8 +282,13 @@ document.addEventListener('keyup', e=>{
 // --- スマホ ---
 ['left','right','shoot'].forEach(id=>{
   const btn=document.getElementById(id);
-  btn.addEventListener('touchstart', (ev)=>{ ev.preventDefault(); keys[id==='left'?'left':id==='right'?'right':'space']=true; });
-  btn.addEventListener('touchend', (ev)=>{ ev.preventDefault(); keys[id==='left'?'left':id==='right'?'right':'space']=false; });
+  if (!btn) return;
+  // Use pointer events when available for better device support
+  btn.addEventListener('pointerdown', (ev)=>{ ev.preventDefault(); keys[id==='left'?'left':id==='right'?'right':'space']=true; });
+  btn.addEventListener('pointerup', (ev)=>{ ev.preventDefault(); keys[id==='left'?'left':id==='right'?'right':'space']=false; });
+  // Touch fallback (some older browsers)
+  btn.addEventListener('touchstart', (ev)=>{ ev.preventDefault(); keys[id==='left'?'left':id==='right'?'right':'space']=true; }, {passive:false});
+  btn.addEventListener('touchend', (ev)=>{ ev.preventDefault(); keys[id==='left'?'left':id==='right'?'right':'space']=false; }, {passive:false});
 });
 
 // --- 敵生成 ---
