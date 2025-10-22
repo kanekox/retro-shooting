@@ -101,7 +101,8 @@ const db = firebase.firestore();
 <!-- スコア入力モーダル -->
 <div id="nameInputModal" class="modal">
   <div class="modal-content">
-    <h2>新しいハイスコア!</h2>
+    <h2>新記録達成！</h2>
+    <p>ハイスコア: ${score} 点</p>
     <p>名前を入力してください：</p>
     <input type="text" id="playerNameInput" maxlength="10" placeholder="名前を入力">
     <div>
@@ -231,6 +232,17 @@ function showModal(modalId) {
 
 function showNameInputDialog() {
   console.log('showNameInputDialog called, gameOver=', gameOver, 'gameOverState=', gameOverState);
+  const modalContent = document.querySelector('#nameInputModal .modal-content');
+  modalContent.innerHTML = `
+    <h2>新記録達成！</h2>
+    <p>ハイスコア: ${score} 点</p>
+    <p>名前を入力してください：</p>
+    <input type="text" id="playerNameInput" maxlength="10" placeholder="名前を入力">
+    <div>
+      <button onclick="submitScore()">保存</button>
+      <button onclick="closeModal('nameInputModal')">キャンセル</button>
+    </div>
+  `;
   showModal('nameInputModal');
 }
 
@@ -687,7 +699,8 @@ function draw(){
 
   if(gameOver){
     // ゲームオーバー時に一度だけ名前入力を表示
-    if(!gameOverState.nameEntered && initCompleted) {
+    // ハイスコア更新時のみ名前入力を表示
+    if(!gameOverState.nameEntered && initCompleted && score > highScore) {
       gameOverState.nameEntered = true;
       setTimeout(() => showNameInputDialog(), 500); // 少し遅延を入れて表示
     }
