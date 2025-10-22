@@ -61,8 +61,20 @@ const ctx = canvas.getContext('2d');
 
 // デバイスがタッチ可能かどうかを判定するユーティリティ
 function isTouchDevice(){
-  if (typeof navigator === 'undefined') return false;
-  return ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') return false;
+  try {
+    // Standard modern checks
+    if (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) return true;
+    if (navigator.msMaxTouchPoints && navigator.msMaxTouchPoints > 0) return true;
+    if ('ontouchstart' in window) return true;
+    // Pointer coarse often indicates touch-style input
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
+    // Fallback to user agent sniff (broad)
+    if (/Mobi|Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent)) return true;
+  } catch (e) {
+    // ignore and fall through
+  }
+  return false;
 }
 
 // ハイスコアを更新する関数
@@ -602,8 +614,12 @@ function draw(){
 
   if(gameOver){
     // Show restart overlay only on touch devices, once
-    if (isTouchDevice() && !gameOverState.overlayShown) {
-      try { showRestartOverlay(true); } catch (e) {}
+    if (!gameOverState.overlayShown) {
+      // Debug: log device detection result once
+      try { console.log('isTouchDevice=', isTouchDevice()); } catch(e){}
+      if (isTouchDevice()) {
+        try { showRestartOverlay(true); } catch (e) {}
+      }
       gameOverState.overlayShown = true;
     }
     // ゲームオーバー時に一度だけ名前入力を表示
