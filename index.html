@@ -27,19 +27,6 @@
   </div>
 </div>
 
-<!-- スコア一覧モーダル -->
-<div id="scoreListModal" class="modal">
-  <div class="modal-content">
-    <h2>ハイスコア一覧</h2>
-    <div id="scoreList" style="max-height: 300px; overflow-y: auto; margin: 10px 0;"></div>
-    <button onclick="closeModal('scoreListModal')">閉じる</button>
-  </div>
-</div>
-
-<!-- スコア一覧表示ボタン -->
-<button id="showScores" onclick="showScoreList()" style="position: fixed; top: 10px; right: 10px; z-index: 1; background: rgba(255,255,255,0.2); color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 5px;">
-  スコア一覧
-</button>
 
 <div id="controls">
   <div class="btn" id="left">←</div>
@@ -199,29 +186,7 @@ async function updateRankings() {
   }
 }
 
-// スコア一覧を表示（モーダル用）
-async function showScoreList() {
-  try {
-    const scoreListDiv = document.getElementById('scoreList');
-    scoreListDiv.innerHTML = '';
-
-    if (rankings.length === 0) {
-      scoreListDiv.innerHTML = '<div>スコアはまだありません</div>';
-      showModal('scoreListModal');
-      return;
-    }
-
-    rankings.forEach(({rank, name, score}) => {
-      const scoreDiv = document.createElement('div');
-      scoreDiv.innerHTML = `${rank}位 <strong>${name}</strong>: ${score}`;
-    scoreListDiv.appendChild(scoreDiv);
-  });
-
-  showModal('scoreListModal');
-  } catch (error) {
-    console.error('スコア一覧の取得に失敗しました:', error);
-  }
-}
+// (スコア一覧 UI は不要になったため削除)
 
 function submitScore() {
   const name = document.getElementById('playerNameInput').value.trim();

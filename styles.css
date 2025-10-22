@@ -108,23 +108,7 @@ canvas {
   background: #888;
 }
 
-#scoreList {
-  text-align: left;
-}
-
-#scoreList div {
-  padding: 5px 10px;
-  border-bottom: 1px solid #444;
-}
-
-#scoreList div:nth-child(even) {
-  background: rgba(255,255,255,0.05);
-}
-
-#scoreList .date {
-  color: #888;
-  font-size: 0.8em;
-}
+/* スコア一覧 UI は削除済み */
 
 #showScores:hover {
   background: rgba(255,255,255,0.3) !important;

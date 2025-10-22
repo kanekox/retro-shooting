@@ -136,29 +136,7 @@ function closeModal(modalId) {
   }
 }
 
-// スコア一覧を表示（モーダル用）
-async function showScoreList() {
-  try {
-    const scoreListDiv = document.getElementById('scoreList');
-    scoreListDiv.innerHTML = '';
-
-    if (rankings.length === 0) {
-      scoreListDiv.innerHTML = '<div>スコアはまだありません</div>';
-      showModal('scoreListModal');
-      return;
-    }
-
-    rankings.forEach(({rank, name, score}) => {
-      const scoreDiv = document.createElement('div');
-      scoreDiv.innerHTML = `${rank}位 <strong>${name}</strong>: ${score}`;
-      scoreListDiv.appendChild(scoreDiv);
-    });
-
-    showModal('scoreListModal');
-  } catch (error) {
-    console.error('スコア一覧の取得に失敗しました:', error);
-  }
-}
+// (スコア一覧機能は UI として不要になったため削除)
 
 function submitScore() {
   const name = document.getElementById('playerNameInput').value.trim();
