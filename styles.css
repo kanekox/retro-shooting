@@ -145,9 +145,13 @@ canvas {
   pointer-events: none;
 }
 
+
 .restart-overlay.show {
   display: flex;
   pointer-events: auto;
+  /* position content near bottom so it doesn't overlap score listing */
+  align-items: flex-end;
+  padding-bottom: calc(env(safe-area-inset-bottom, 10px) + 40px);
 }
 
 .restart-btn {
@@ -160,6 +164,7 @@ canvas {
   text-align: center;
   line-height: 1.1;
   box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+  margin-bottom: 20px;
 }
 
 .restart-btn:active {

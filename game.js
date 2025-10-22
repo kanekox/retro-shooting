@@ -59,6 +59,12 @@ const db = firebase.firestore();
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// デバイスがタッチ可能かどうかを判定するユーティリティ
+function isTouchDevice(){
+  if (typeof navigator === 'undefined') return false;
+  return ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+}
+
 // ハイスコアを更新する関数
 async function getHighScore() {
   try {
@@ -226,7 +232,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ゲームオーバー関連の状態（名前入力済みフラグなど）
-let gameOverState = { nameEntered: false };
+let gameOverState = { nameEntered: false, overlayShown: false };
 let initCompleted = false;
 
 function init(){
@@ -239,6 +245,9 @@ function init(){
   lives = 3;
   gameOver = false;
   gameOverState.nameEntered = false;
+  gameOverState.overlayShown = false;
+  // hide restart overlay when starting
+  try { showRestartOverlay(false); } catch(e){}
   frame = 0;
   level = 1;
   boss = null;
@@ -592,6 +601,11 @@ function draw(){
   }
 
   if(gameOver){
+    // Show restart overlay only on touch devices, once
+    if (isTouchDevice() && !gameOverState.overlayShown) {
+      try { showRestartOverlay(true); } catch (e) {}
+      gameOverState.overlayShown = true;
+    }
     // ゲームオーバー時に一度だけ名前入力を表示
     // ハイスコア更新時のみ名前入力を表示
     if(!gameOverState.nameEntered && initCompleted && score > highScore) {
@@ -627,8 +641,11 @@ function draw(){
     ctx.fillStyle = 'white';
     ctx.font = '40px sans-serif';
     ctx.fillText('GAME OVER', 120, 500);
-    ctx.font = '20px sans-serif';
-    ctx.fillText('Press ENTER to Restart', 130, 540);
+    // Show 'Press ENTER' only on non-touch devices (PC)
+    if (!isTouchDevice()) {
+      ctx.font = '20px sans-serif';
+      ctx.fillText('Press ENTER to Restart', 130, 540);
+    }
   }
 }
 
