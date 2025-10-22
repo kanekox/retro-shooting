@@ -1,50 +1,18 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<title>レトロ・シューティング</title>
-<link rel="stylesheet" href="styles.css">
-<!-- Firebase SDK (v9 compat) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-</head>
-<body>
-<canvas id="gameCanvas" width="480" height="640"></canvas>
+// Firebaseの設定
+const firebaseConfig = {
+  apiKey: "AIzaSyBGvRDZdogbWVR-Vn03lkPzLqMszX0f9eo",
+  authDomain: "kanekox-apps.firebaseapp.com",
+  projectId: "kanekox-apps",
+  storageBucket: "kanekox-apps.firebasestorage.app",
+  messagingSenderId: "968979817079",
+  appId: "1:968979817079:web:62936aa6570b6387ba1c72",
+  measurementId: "G-S5JH6RXKC2"  
+};
 
-<!-- スコア入力モーダル -->
-<div id="nameInputModal" class="modal">
-  <div class="modal-content">
-    <h2>新記録達成！</h2>
-    <p>名前を入力してください：</p>
-    <input type="text" id="playerNameInput" maxlength="10" placeholder="名前を入力">
-    <div>
-      <button onclick="submitScore()">保存</button>
-      <button onclick="closeModal('nameInputModal')">キャンセル</button>
-    </div>
-  </div>
-</div>
+// Firebase初期化（compatを使うことで既存の v8 スタイルの呼び出しが動作します）
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-<!-- スコア一覧モーダル -->
-<div id="scoreListModal" class="modal">
-  <div class="modal-content">
-    <h2>ハイスコア一覧</h2>
-    <div id="scoreList" style="max-height: 300px; overflow-y: auto; margin: 10px 0;"></div>
-    <button onclick="closeModal('scoreListModal')">閉じる</button>
-  </div>
-</div>
-
-<!-- スコア一覧表示ボタン -->
-<button id="showScores" onclick="showScoreList()" style="position: fixed; top: 10px; right: 10px; z-index: 1; background: rgba(255,255,255,0.2); color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 5px;">
-  スコア一覧
-</button>
-
-<div id="controls">
-  <div class="btn" id="left">←</div>
-  <div class="btn" id="shoot">★</div>
-  <div class="btn" id="right">→</div>
-</div>
-
-<script src="game.js">
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const keys = { left:false, right:false, space:false };
@@ -165,32 +133,6 @@ function closeModal(modalId) {
   }
 }
 
-// ランキングデータを取得・更新
-async function updateRankings() {
-  try {
-    const snapshot = await db.collection('scores')
-      .orderBy('score', 'desc')
-      .limit(10)
-      .get();
-
-    if (!snapshot.empty) {
-      rankings = snapshot.docs.map((doc, index) => {
-        const data = doc.data();
-        return {
-          rank: index + 1,
-          name: data.playerName,
-          score: data.score
-        };
-      });
-      if (rankings.length > 0) {
-        highScore = rankings[0].score;
-      }
-    }
-  } catch (error) {
-    console.error('ランキングの取得に失敗しました:', error);
-  }
-}
-
 // スコア一覧を表示（モーダル用）
 async function showScoreList() {
   try {
@@ -206,10 +148,10 @@ async function showScoreList() {
     rankings.forEach(({rank, name, score}) => {
       const scoreDiv = document.createElement('div');
       scoreDiv.innerHTML = `${rank}位 <strong>${name}</strong>: ${score}`;
-    scoreListDiv.appendChild(scoreDiv);
-  });
+      scoreListDiv.appendChild(scoreDiv);
+    });
 
-  showModal('scoreListModal');
+    showModal('scoreListModal');
   } catch (error) {
     console.error('スコア一覧の取得に失敗しました:', error);
   }
@@ -253,8 +195,6 @@ document.addEventListener('keydown', e => {
     }
   }
 });
-
-
 
 // ゲームオーバー関連の状態（名前入力済みフラグなど）
 let gameOverState = { nameEntered: false };
@@ -617,7 +557,7 @@ function draw(){
       setTimeout(() => showNameInputDialog(), 500); // 少し遅延を入れて表示
     }
     
-      // ランキング表示
+    // ランキング表示
     if (rankings.length > 0) {
       ctx.fillStyle = 'white';
       ctx.font = '24px sans-serif';
@@ -666,6 +606,3 @@ window.addEventListener('click', ()=>{
 
 init();
 loop();
-</script>
-</body>
-</html>
