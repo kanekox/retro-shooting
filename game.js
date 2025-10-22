@@ -639,12 +639,36 @@ function loop(){
   requestAnimationFrame(loop);
 }
 
+// リスタートオーバーレイ表示制御
+function showRestartOverlay(show){
+  const overlay = document.getElementById('restartOverlay');
+  if(!overlay) return;
+  if(show){
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden', 'false');
+  } else {
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+}
+
 // --- Audio 初期化 ---
 window.addEventListener('click', ()=>{
   if(!audioCtx){
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
 },{once:true});
+
+// リスタートボタンのイベント設定
+document.addEventListener('DOMContentLoaded', ()=>{
+  const restartBtn = document.getElementById('restartBtn');
+  const restartOverlay = document.getElementById('restartOverlay');
+  if(!restartBtn) return;
+  // pointer/touch対応
+  restartBtn.addEventListener('pointerup', (e)=>{ e.preventDefault(); init(); showRestartOverlay(false); }, {passive:false});
+  restartBtn.addEventListener('click', (e)=>{ e.preventDefault(); init(); showRestartOverlay(false); });
+  restartBtn.addEventListener('touchend', (e)=>{ e.preventDefault(); init(); showRestartOverlay(false); }, {passive:false});
+});
 
 init();
 loop();

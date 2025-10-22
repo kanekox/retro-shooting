@@ -47,6 +47,11 @@
   <div class="btn" id="right">→</div>
 </div>
 
+<!-- Mobile restart overlay (shown when gameOver) -->
+<div id="restartOverlay" class="restart-overlay" aria-hidden="true">
+  <button id="restartBtn" class="restart-btn">RESTART<br><small>Tap to restart</small></button>
+</div>
+
 <script src="game.js">
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
