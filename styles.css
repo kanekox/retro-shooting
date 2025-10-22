@@ -17,8 +17,23 @@ canvas {
   left: 0; 
   right: 0;
   display: flex; 
-  justify-content: space-around; 
+  justify-content: space-between;
   pointer-events: auto;
+}
+
+.controls-group {
+  display: flex;
+  align-items: center;
+}
+
+/* Left controls: place left and right buttons next to each other */
+#controls-left .btn {
+  margin-right: 8px;
+}
+
+/* Right controls: keep shoot button aligned to right */
+#controls-right { 
+  margin-right: 12px;
 }
 
 .btn {
