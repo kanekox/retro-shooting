@@ -28,7 +28,7 @@ canvas {
 
 /* Left controls: place left and right buttons next to each other */
 #controls-left .btn {
-  margin-right: 8px;
+  margin-right: 14px;
 }
 
 /* Right controls: keep shoot button aligned to right */
@@ -80,12 +80,13 @@ canvas {
 .modal {
   display: none;
   position: fixed;
-  z-index: 1;
+  z-index: 4000; /* bring modal above overlays and controls so buttons are tappable */
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
   background-color: rgba(0,0,0,0.7);
+  pointer-events: auto;
 }
 
 .modal-content {
@@ -97,6 +98,7 @@ canvas {
   color: white;
   text-align: center;
   border-radius: 10px;
+  z-index: 4001;
 }
 
 .modal input {

@@ -108,8 +108,13 @@ function showModal(modalId) {
     modal.style.display = 'block';
     // 名前入力モーダルの場合、入力欄にフォーカス
     if (modalId === 'nameInputModal') {
-      document.getElementById('playerNameInput').focus();
+      const input = document.getElementById('playerNameInput');
+      input?.focus();
     }
+    // Disable on-screen controls and hide restart overlay while modal is open
+    const controls = document.getElementById('controls');
+    if (controls) controls.style.pointerEvents = 'none';
+    try { showRestartOverlay(false); } catch (e) {}
   }
 }
 
@@ -130,10 +135,15 @@ function showNameInputDialog() {
 }
 
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = 'none';
+  const modal = document.getElementById(modalId);
+  if (modal) modal.style.display = 'none';
   if (modalId === 'nameInputModal') {
-    document.getElementById('playerNameInput').value = '';
+    const input = document.getElementById('playerNameInput');
+    if (input) input.value = '';
   }
+  // Re-enable on-screen controls when modal closed
+  const controls = document.getElementById('controls');
+  if (controls) controls.style.pointerEvents = 'auto';
 }
 
 // (スコア一覧機能は UI として不要になったため削除)
@@ -593,8 +603,6 @@ function draw(){
   if(gameOver){
     // Show restart overlay only on touch devices, once
     if (!gameOverState.overlayShown) {
-      // Debug: log device detection result once
-      try { console.log('isTouchDevice=', isTouchDevice()); } catch(e){}
       if (isTouchDevice()) {
         try { showRestartOverlay(true); } catch (e) {}
       }
