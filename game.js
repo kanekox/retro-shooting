@@ -144,6 +144,11 @@ function closeModal(modalId) {
   // Re-enable on-screen controls when modal closed
   const controls = document.getElementById('controls');
   if (controls) controls.style.pointerEvents = 'auto';
+  // If the game is already over and we're on a touch device, re-show the restart overlay
+  if (gameOver && isTouchDevice()) {
+    try { showRestartOverlay(true); } catch (e) {}
+    gameOverState.overlayShown = true;
+  }
 }
 
 // (スコア一覧機能は UI として不要になったため削除)

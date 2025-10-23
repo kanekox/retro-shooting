@@ -28,7 +28,7 @@ canvas {
 
 /* Left controls: place left and right buttons next to each other */
 #controls-left .btn {
-  margin-right: 14px;
+  margin-right: 20px;
 }
 
 /* Right controls: keep shoot button aligned to right */
