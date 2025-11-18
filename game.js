@@ -733,10 +733,19 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const restartBtn = document.getElementById('restartBtn');
   const restartOverlay = document.getElementById('restartOverlay');
   if(!restartBtn) return;
-  // pointer/touch対応
-  restartBtn.addEventListener('pointerup', (e)=>{ e.preventDefault(); init(); showRestartOverlay(false); }, {passive:false});
-  restartBtn.addEventListener('click', (e)=>{ e.preventDefault(); init(); showRestartOverlay(false); });
-  restartBtn.addEventListener('touchend', (e)=>{ e.preventDefault(); init(); showRestartOverlay(false); }, {passive:false});
+  // pointer/touch対応 with a small guard to avoid duplicate events
+  let lastRestart = 0;
+  function triggerRestart(e){
+    e.preventDefault();
+    const now = Date.now();
+    if(now - lastRestart < 500) return; // ignore duplicates
+    lastRestart = now;
+    try { init(); } catch (err) { console.error(err); }
+    try { showRestartOverlay(false); } catch (err) {}
+  }
+  restartBtn.addEventListener('pointerdown', triggerRestart, {passive:false});
+  restartBtn.addEventListener('click', triggerRestart);
+  restartBtn.addEventListener('touchend', triggerRestart, {passive:false});
 });
 
 init();
