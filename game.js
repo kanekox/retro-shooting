@@ -119,7 +119,6 @@ function showModal(modalId) {
 }
 
 function showNameInputDialog() {
-  console.log('showNameInputDialog called, gameOver=', gameOver, 'gameOverState=', gameOverState);
   const modalContent = document.querySelector('#nameInputModal .modal-content');
   modalContent.innerHTML = `
     <h2>新記録達成！</h2>

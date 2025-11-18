@@ -4,6 +4,11 @@ body {
   background: black; 
 }
 
+:root {
+  --btn-size: clamp(56px, 12vw, 96px);
+  --btn-font-scale: 0.45;
+}
+
 canvas { 
   display: block; 
   margin: 0 auto; 
@@ -20,6 +25,12 @@ canvas {
   justify-content: space-between;
   pointer-events: auto;
 }
+/* keep controls above canvas but below modal/overlay */
+#controls {
+  z-index: 2000;
+  padding-left: max(env(safe-area-inset-left, 12px), 3vw);
+  padding-right: max(env(safe-area-inset-right, 12px), 3vw);
+}
 
 .controls-group {
   display: flex;
@@ -28,7 +39,9 @@ canvas {
 
 /* Left controls: place left and right buttons next to each other */
 #controls-left .btn {
-  margin-right: 20px;
+  margin-right: 40px;
+  /* make left/right larger */
+  --btn-size: calc(var(--btn-size) * 1.5);
 }
 
 /* Right controls: keep shoot button aligned to right */
@@ -39,22 +52,15 @@ canvas {
 .btn {
   background: rgba(255,255,255,0.2);
   border-radius: 50%;
-  /* Use viewport-relative sizing so high-DPI phones get larger buttons */
-  width: max(12vw, 56px);
-  height: max(12vw, 56px);
-  min-width: 56px;
-  min-height: 56px;
-  max-width: 120px;
-  max-height: 120px;
+  width: var(--btn-size);
+  height: var(--btn-size);
   text-align: center;
-  /* center vertically when using variable height */
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: calc(max(12vw, 56px) * 0.45);
+  font-size: calc(var(--btn-size) * var(--btn-font-scale));
   user-select: none;
-  /* Make hit area slightly larger without changing visual size */
   padding: 8px;
   box-sizing: content-box;
   touch-action: manipulation;
