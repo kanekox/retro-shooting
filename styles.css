@@ -15,6 +15,12 @@ canvas {
   background: #000; 
   touch-action: none; 
 }
+/* Make canvas responsive so the page doesn't get auto-zoomed on narrow viewports */
+canvas {
+  width: 100%;
+  height: auto;
+  max-width: 480px; /* keep intended aspect when possible */
+}
 
 #controls {
   position: fixed; 

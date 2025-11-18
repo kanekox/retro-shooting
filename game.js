@@ -693,8 +693,12 @@ function adjustControlsLayout(){
   const h = window.innerHeight || document.documentElement.clientHeight;
   const dpr = window.devicePixelRatio || 1;
 
+  // prefer visualViewport if available (accounts for pinch-zoom/initial scaling)
+  const viewportWidth = (window.visualViewport && window.visualViewport.width) ? window.visualViewport.width : w;
+  const viewportHeight = (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : h;
+
   // Base size: responsive to viewport width, clamped to reasonable px
-  const base = Math.max(56, Math.min(96, Math.round(w * 0.12)));
+  const base = Math.max(56, Math.min(96, Math.round(viewportWidth * 0.12)));
   // Left buttons 1.5x, shoot button base
   const leftSize = Math.round(base * 1.5);
   const shootSize = Math.round(base);
@@ -703,7 +707,7 @@ function adjustControlsLayout(){
   const spacing = Math.round(Math.max(12, base * 0.6));
 
   // Safe padding from edges (use safe-area if available)
-  const padLR = Math.max(12, Math.round(w * 0.03));
+  const padLR = Math.max(12, Math.round(viewportWidth * 0.03));
 
   // Apply sizes
   leftBtns.forEach(b=>{
