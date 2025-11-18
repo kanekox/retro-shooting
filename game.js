@@ -682,6 +682,52 @@ window.addEventListener('click', ()=>{
   }
 },{once:true});
 
+// Dynamically adjust control sizes/positions to fit high-DPI and wide screens
+function adjustControlsLayout(){
+  const controls = document.getElementById('controls');
+  const leftBtns = document.querySelectorAll('#controls-left .btn');
+  const shootBtn = document.getElementById('shoot');
+  if(!controls || !shootBtn || leftBtns.length===0) return;
+
+  const w = window.innerWidth || document.documentElement.clientWidth;
+  const h = window.innerHeight || document.documentElement.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+
+  // Base size: responsive to viewport width, clamped to reasonable px
+  const base = Math.max(56, Math.min(96, Math.round(w * 0.12)));
+  // Left buttons 1.5x, shoot button base
+  const leftSize = Math.round(base * 1.5);
+  const shootSize = Math.round(base);
+
+  // Spacing: roughly proportional to base, doubled compared to earlier default
+  const spacing = Math.round(Math.max(12, base * 0.6));
+
+  // Safe padding from edges (use safe-area if available)
+  const padLR = Math.max(12, Math.round(w * 0.03));
+
+  // Apply sizes
+  leftBtns.forEach(b=>{
+    b.style.setProperty('--btn-size', leftSize + 'px');
+    b.style.marginRight = spacing + 'px';
+  });
+  shootBtn.style.setProperty('--btn-size', shootSize + 'px');
+
+  // Apply container padding so controls don't go offscreen
+  controls.style.paddingLeft = padLR + 'px';
+  controls.style.paddingRight = padLR + 'px';
+
+  // Ensure controls are visible layer-wise
+  controls.style.zIndex = 2000;
+}
+
+// Run on load and when viewport changes
+window.addEventListener('resize', adjustControlsLayout);
+window.addEventListener('orientationchange', adjustControlsLayout);
+document.addEventListener('DOMContentLoaded', ()=>{
+  // small timeout to ensure layout settled
+  setTimeout(adjustControlsLayout, 50);
+});
+
 // リスタートボタンのイベント設定
 document.addEventListener('DOMContentLoaded', ()=>{
   const restartBtn = document.getElementById('restartBtn');
