@@ -728,6 +728,20 @@ document.addEventListener('DOMContentLoaded', ()=>{
   setTimeout(adjustControlsLayout, 50);
 });
 
+// Also run on full window load and when visualViewport changes (pinch/zoom)
+window.addEventListener('load', ()=>{
+  adjustControlsLayout();
+  // retry a few times in case browser adjusts scale after load
+  setTimeout(adjustControlsLayout, 100);
+  setTimeout(adjustControlsLayout, 500);
+  setTimeout(adjustControlsLayout, 1000);
+});
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', adjustControlsLayout);
+  window.visualViewport.addEventListener('scroll', adjustControlsLayout);
+}
+
 // リスタートボタンのイベント設定
 document.addEventListener('DOMContentLoaded', ()=>{
   const restartBtn = document.getElementById('restartBtn');
