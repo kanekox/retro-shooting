@@ -727,14 +727,27 @@ function adjustControlsLayout(){
   const shootSize = Math.round(base);
 
   // Spacing: roughly proportional to base, doubled compared to earlier default
-  const spacing = Math.round(Math.max(12, base * 0.6));
+  let spacing = Math.round(Math.max(12, base * 0.6));
+
+  // iPad-specific adjustments: make left/right buttons smaller and reduce spacing
+  // Detect iPad (covers modern iPadOS which may report MacIntel with touch points)
+  const isIpad = (typeof navigator !== 'undefined') && (
+    /iPad/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints && navigator.maxTouchPoints > 1)
+  );
+
+  let computedLeftSize = leftSize;
+  if (isIpad) {
+    computedLeftSize = Math.round(leftSize * 0.8); // 80% size on iPad
+    spacing = Math.round(spacing * 0.5); // half spacing on iPad
+  }
 
   // Safe padding from edges (use safe-area if available)
   const padLR = Math.max(12, Math.round(viewportWidth * 0.03));
 
   // Apply sizes
   leftBtns.forEach(b=>{
-    b.style.setProperty('--btn-size', leftSize + 'px');
+    b.style.setProperty('--btn-size', computedLeftSize + 'px');
     b.style.marginRight = spacing + 'px';
   });
   shootBtn.style.setProperty('--btn-size', shootSize + 'px');
