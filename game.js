@@ -722,12 +722,12 @@ function adjustControlsLayout(){
 
   // Base size: responsive to viewport width, clamped to reasonable px
   const base = Math.max(56, Math.min(96, Math.round(viewportWidth * 0.12)));
-  // Left buttons 1.5x, shoot button base
-  const leftSize = Math.round(base * 1.5);
+  // 左右 buttons 1.3x, shoot button base
+  const leftSize = Math.round(base * 1.3);
   const shootSize = Math.round(base);
 
   // Spacing: roughly proportional to base, doubled compared to earlier default
-  let spacing = Math.round(Math.max(12, base * 0.6));
+  let spacing = Math.round(Math.max(12, base * 0.4));
 
   // iPad-specific adjustments: make left/right buttons smaller and reduce spacing
   // Detect iPad (covers modern iPadOS which may report MacIntel with touch points)
