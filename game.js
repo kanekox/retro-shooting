@@ -59,6 +59,27 @@ const db = firebase.firestore();
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Helpers: return CSS (layout) size in CSS pixels
+function cssCanvasWidth(){ return canvas.clientWidth || Math.round((canvas.width || 480) / (window.devicePixelRatio || 1)); }
+function cssCanvasHeight(){ return canvas.clientHeight || Math.round((canvas.height || 640) / (window.devicePixelRatio || 1)); }
+
+// Resize internal canvas buffer to match CSS display size * devicePixelRatio
+function resizeCanvasForDPR(){
+  const dpr = window.devicePixelRatio || 1;
+  const displayWidth = Math.max(1, Math.round(cssCanvasWidth()));
+  const displayHeight = Math.max(1, Math.round(cssCanvasHeight()));
+  const needResize = canvas.width !== displayWidth * dpr || canvas.height !== displayHeight * dpr;
+  if(needResize){
+    canvas.width = displayWidth * dpr;
+    canvas.height = displayHeight * dpr;
+    // keep CSS size explicit so layout is stable
+    canvas.style.width = displayWidth + 'px';
+    canvas.style.height = displayHeight + 'px';
+    // scale drawing so existing drawing code can keep using CSS pixel coordinates
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+}
+
 // デバイスがタッチ可能かどうかを判定するユーティリティ
 function isTouchDevice(){
   if (typeof navigator === 'undefined' || typeof window === 'undefined') return false;
@@ -261,7 +282,7 @@ function init(){
   // 星
   stars = [];
   for(let i=0; i<100; i++){
-    stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, size:Math.random()*2, speed:1+Math.random()*2});
+    stars.push({x:Math.random()*cssCanvasWidth(), y:Math.random()*cssCanvasHeight(), size:Math.random()*2, speed:1+Math.random()*2});
   }
   
   // ハイスコアを取得
@@ -308,14 +329,14 @@ document.addEventListener('keyup', e=>{
 function spawnEnemy(){
   const speed = 2 + Math.random() * (2 + level * 0.5);
   const type = Math.random() < 0.5 ? 'normal' : 'shooter';
-  enemies.push({x:Math.random()*(canvas.width-40), y:-20, w:30, h:20, speed, type});
+  enemies.push({x:Math.random()*(Math.max(0, cssCanvasWidth()-40)), y:-20, w:30, h:20, speed, type});
 }
 
 // --- ボス生成 ---
 function spawnBoss(){
   // ボスのHPはベース20 + レベルに応じた増加
   boss = {
-    x: (canvas.width - 80) / 2,
+    x: (cssCanvasWidth() - 80) / 2,
     y: -80,
     w: 80,
     h: 40,
@@ -340,7 +361,7 @@ function nextStage(){
   enemies = [];
   enemyBullets = [];
   bullets = [];
-  addExplosion(canvas.width/2, canvas.height/2, 'white');
+  addExplosion(cssCanvasWidth()/2, cssCanvasHeight()/2, 'white');
   playSound(880, 0.25, 'sine', 0.15);
 }
 
@@ -348,8 +369,8 @@ function nextStage(){
 function updateStars(){
   for(let s of stars){
     s.y+=s.speed;
-    if(s.y>canvas.height){
-      s.y=0; s.x=Math.random()*canvas.width;
+    if(s.y>cssCanvasHeight()){
+      s.y=0; s.x=Math.random()*cssCanvasWidth();
     }
   }
 }
@@ -369,7 +390,7 @@ function update(){
   // プレイヤー操作
   if(keys.left) player.x-=player.speed;
   if(keys.right) player.x+=player.speed;
-  player.x=Math.max(0,Math.min(canvas.width-player.w,player.x));
+  player.x=Math.max(0,Math.min(cssCanvasWidth()-player.w,player.x));
 
   // 弾発射
   if(keys.space && frame%10===0){
@@ -377,7 +398,7 @@ function update(){
     playSound(880,0.05,'sawtooth',0.1);
   }
   bullets.forEach(b=>b.y-=b.speed);
-  bullets=bullets.filter(b=>b.y>-b.h && !b.dead);
+  bullets=bullets.filter(b=>b.y>-b.h && !b.dead && b.y <= cssCanvasHeight());
 
   // 敵（通常）出現：ボスがいないときのみ
   if(!boss && !bossComing){
@@ -390,14 +411,14 @@ function update(){
     if(e.type==='shooter' && frame%90===0)
       enemyBullets.push({x:e.x+e.w/2-2,y:e.y+e.h,w:4,h:10,speed:4,dx:0});
   });
-  enemies=enemies.filter(e=>e.y<canvas.height && !e.dead);
+  enemies=enemies.filter(e=>e.y<cssCanvasHeight() && !e.dead);
 
   // 敵弾更新（dxを考慮）
   enemyBullets.forEach(b=>{
     b.y += b.speed;
     if (b.dx) b.x += b.dx;
   });
-  enemyBullets=enemyBullets.filter(b=>b.y<canvas.height && !b.dead);
+  enemyBullets=enemyBullets.filter(b=>b.y<cssCanvasHeight() && !b.dead);
 
   // 衝突（通常弾 vs 通常敵）
   for(let b of bullets){
@@ -447,7 +468,7 @@ function update(){
       // 横移動
       boss.x += boss.dir * boss.speed;
       if(boss.x < 0){ boss.x = 0; boss.dir = 1; }
-      if(boss.x + boss.w > canvas.width){ boss.x = canvas.width - boss.w; boss.dir = -1; }
+  if(boss.x + boss.w > cssCanvasWidth()){ boss.x = cssCanvasWidth() - boss.w; boss.dir = -1; }
 
       // 攻撃
       boss.cooldown++;
@@ -516,7 +537,7 @@ function update(){
 function draw(){
   // 背景
   ctx.fillStyle='black';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillRect(0,0,cssCanvasWidth(),cssCanvasHeight());
   ctx.fillStyle='white';
   for(let s of stars) ctx.fillRect(s.x,s.y,s.size,s.size);
 
@@ -570,8 +591,8 @@ function draw(){
     ctx.fillRect(boss.x + boss.w/4, boss.y + boss.h/2 - 3, boss.w/2, 6);
 
     // HPバー（固定位置）
-    const barW = 180;
-    const barX = (canvas.width - barW)/2;
+  const barW = 180;
+  const barX = (cssCanvasWidth() - barW)/2;
     ctx.fillStyle = 'black';
     ctx.fillRect(barX-1, 18-1, barW+2, 12+2);
     ctx.fillStyle='red';
@@ -684,6 +705,8 @@ window.addEventListener('click', ()=>{
 
 // Dynamically adjust control sizes/positions to fit high-DPI and wide screens
 function adjustControlsLayout(){
+  // Ensure canvas internal buffer matches CSS size & DPR before layout computations
+  try { resizeCanvasForDPR(); } catch(e){}
   const controls = document.getElementById('controls');
   const leftBtns = document.querySelectorAll('#controls-left .btn');
   const shootBtn = document.getElementById('shoot');
@@ -729,16 +752,20 @@ window.addEventListener('resize', adjustControlsLayout);
 window.addEventListener('orientationchange', adjustControlsLayout);
 document.addEventListener('DOMContentLoaded', ()=>{
   // small timeout to ensure layout settled
+  // resize canvas first for DPR
+  try { resizeCanvasForDPR(); } catch(e){}
   setTimeout(adjustControlsLayout, 50);
 });
 
 // Also run on full window load and when visualViewport changes (pinch/zoom)
 window.addEventListener('load', ()=>{
+  // Ensure canvas internal buffer matches DPR on full load
+  try { resizeCanvasForDPR(); } catch(e){}
   adjustControlsLayout();
   // retry a few times in case browser adjusts scale after load
-  setTimeout(adjustControlsLayout, 100);
-  setTimeout(adjustControlsLayout, 500);
-  setTimeout(adjustControlsLayout, 1000);
+  setTimeout(()=>{ resizeCanvasForDPR(); adjustControlsLayout(); }, 100);
+  setTimeout(()=>{ resizeCanvasForDPR(); adjustControlsLayout(); }, 500);
+  setTimeout(()=>{ resizeCanvasForDPR(); adjustControlsLayout(); }, 1000);
 });
 
 if (window.visualViewport) {
